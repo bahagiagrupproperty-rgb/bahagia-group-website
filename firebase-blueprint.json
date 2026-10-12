@@ -1,0 +1,159 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account and RBAC profile stored in users/{userId} with PII isolation",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "maxLength": 120 },
+        "email": { "type": "string", "format": "email", "maxLength": 150 },
+        "role": { "type": "string", "maxLength": 40 },
+        "permissions": { "type": "array" },
+        "isActive": { "type": "boolean" },
+        "companyAccess": { "type": "array" },
+        "companyId": { "type": "string", "maxLength": 64 },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid", "name", "email", "role", "isActive", "companyId", "active", "createdAt"]
+    },
+    "ErpRecord": {
+      "title": "ErpRecord",
+      "description": "Unified ERP entity document for units, kavling, bookings, complaints, RAB, progress, opname, PO, COA, journals, HRM, inventory, and system settings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "collectionName": { "type": "string", "maxLength": 64 },
+        "companyId": { "type": "string", "maxLength": 64 },
+        "title": { "type": "string", "maxLength": 250 },
+        "status": { "type": "string", "maxLength": 64 },
+        "amount": { "type": "number" },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "collectionName", "companyId", "title", "status", "createdBy", "createdAt"]
+    },
+    "ProjectSubmission": {
+      "title": "ProjectSubmission",
+      "description": "PJT project submission document stored in project_submissions/{submissionId}",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "submissionNumber": { "type": "string", "maxLength": 64 },
+        "type": { "type": "string", "maxLength": 32 },
+        "projectName": { "type": "string", "maxLength": 250 },
+        "companyId": { "type": "string", "maxLength": 64 },
+        "rabAmount": { "type": "number" },
+        "status": { "type": "string", "maxLength": 64 },
+        "requester": { "type": "string", "maxLength": 120 },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "submissionNumber", "type", "projectName", "companyId", "rabAmount", "status", "requester", "createdBy", "createdAt"]
+    },
+    "SubmissionItem": {
+      "title": "SubmissionItem",
+      "description": "RAB detail line item stored in project_submissions/{submissionId}/submission_items/{itemId}",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "submissionId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "category": { "type": "string", "maxLength": 64 },
+        "description": { "type": "string", "maxLength": 250 },
+        "volume": { "type": "number" },
+        "unit": { "type": "string", "maxLength": 32 },
+        "unitPrice": { "type": "number" },
+        "subtotal": { "type": "number" },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "submissionId", "category", "description", "volume", "unit", "unitPrice", "subtotal", "createdBy", "createdAt"]
+    },
+    "SiteplanMaster": {
+      "title": "SiteplanMaster",
+      "description": "Site plan background metadata and JSON-serialized manual polygons stored in siteplans/{projectId}",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "nama": { "type": "string", "maxLength": 200 },
+        "backgroundImage": { "type": "string", "maxLength": 350000 },
+        "imageWidth": { "type": "number" },
+        "imageHeight": { "type": "number" },
+        "polygonsJson": { "type": "string", "maxLength": 350000 },
+        "updatedAt": { "type": "string", "maxLength": 64 },
+        "updatedBy": { "type": "string", "maxLength": 150 }
+      },
+      "required": ["projectId", "nama", "backgroundImage", "imageWidth", "imageHeight", "polygonsJson", "updatedAt", "updatedBy"]
+    },
+    "LivePublishedSnapshot": {
+      "title": "LivePublishedSnapshot",
+      "description": "Global published state chunk for cross-device live presentation and real-time sync stored in live_snapshots/{snapshotId}",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "version": { "type": "number" },
+        "publishedAt": { "type": "string", "maxLength": 64 },
+        "publishedBy": { "type": "string", "maxLength": 150 },
+        "payloadJson": { "type": "string", "maxLength": 750000 }
+      },
+      "required": ["id", "version", "publishedAt", "publishedBy", "payloadJson"]
+    },
+    "ApprovalNotification": {
+      "title": "ApprovalNotification",
+      "description": "Real-time notification alert for submissions requiring verification or approval by Keuangan, Direktur, PJT, or Admin",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "targetRole": { "type": "string", "maxLength": 40 },
+        "title": { "type": "string", "maxLength": 200 },
+        "message": { "type": "string", "maxLength": 400 },
+        "category": { "type": "string", "maxLength": 64 },
+        "referenceId": { "type": "string", "maxLength": 128 },
+        "companyId": { "type": "string", "maxLength": 64 },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "maxLength": 64 },
+        "actionPath": { "type": "string", "maxLength": 150 },
+        "requester": { "type": "string", "maxLength": 120 },
+        "isRead": { "type": "boolean" },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "targetRole", "title", "message", "category", "referenceId", "companyId", "amount", "status", "actionPath", "requester", "isRead", "createdBy", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User RBAC profiles containing role, permissions[], isActive, and companyAccess[]"
+    },
+    "/erp_records/{recordId}": {
+      "schema": { "$ref": "#/entities/ErpRecord" },
+      "description": "Synchronized ERP records across modules"
+    },
+    "/project_submissions/{submissionId}": {
+      "schema": { "$ref": "#/entities/ProjectSubmission" },
+      "description": "PJT project submissions (Lahan Baru, Unit Baru, Fasum/Fasos, Renovasi)"
+    },
+    "/project_submissions/{submissionId}/submission_items/{itemId}": {
+      "schema": { "$ref": "#/entities/SubmissionItem" },
+      "description": "RAB line items belonging to a project submission"
+    },
+    "/siteplans/{projectId}": {
+      "schema": { "$ref": "#/entities/SiteplanMaster" },
+      "description": "Manual site plan canvas editor polygons and original PNG background reference"
+    },
+    "/live_snapshots/{snapshotId}": {
+      "schema": { "$ref": "#/entities/LivePublishedSnapshot" },
+      "description": "Global published state chunks for live presentation and cross-device real-time sync"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/ApprovalNotification" },
+      "description": "Real-time approval and verification alert notifications for Keuangan, Direktur, PJT, and Admin"
+    }
+  }
+}

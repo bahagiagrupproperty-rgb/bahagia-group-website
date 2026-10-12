@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bahagia Group Property — Sistem ERP & Portal Hunian</title>
+    <meta name="description" content="Membangun Hunian Bahagia untuk Keluarga Indonesia. Sistem manajemen terpadu dan katalog properti PT Tata Bahagia Land & PT Bahagia Prima Property." />
+    <meta property="og:title" content="Bahagia Group Property — Sistem ERP & Portal Hunian" />
+    <meta property="og:description" content="Membangun Hunian Bahagia untuk Keluarga Indonesia. Sistem manajemen terpadu dan katalog properti PT Tata Bahagia Land & PT Bahagia Prima Property." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      (function () {
+        var OrigWS = window.WebSocket;
+        if (!OrigWS) return;
+        function PatchedWS(url, protocols) {
+          var isViteHmr =
+            protocols === 'vite-hmr' ||
+            (Array.isArray(protocols) && protocols.indexOf('vite-hmr') !== -1) ||
+            (typeof url === 'string' && url.indexOf('token=') !== -1 && url.indexOf('firestore') === -1);
+          if (isViteHmr) {
+            var dummy = new EventTarget();
+            dummy.CONNECTING = 0;
+            dummy.OPEN = 1;
+            dummy.CLOSING = 2;
+            dummy.CLOSED = 3;
+            dummy.readyState = 1;
+            dummy.protocol = 'vite-hmr';
+            dummy.url = String(url || '');
+            dummy.send = function () {};
+            dummy.close = function () { dummy.readyState = 3; };
+            setTimeout(function () {
+              try {
+                var ev = new MessageEvent('message', { data: JSON.stringify({ type: 'connected' }) });
+                if (typeof dummy.onmessage === 'function') dummy.onmessage(ev);
+                dummy.dispatchEvent(ev);
+              } catch (e) {}
+            }, 0);
+            return dummy;
+          }
+          return protocols !== undefined ? new OrigWS(url, protocols) : new OrigWS(url);
+        }
+        PatchedWS.prototype = OrigWS.prototype;
+        PatchedWS.CONNECTING = OrigWS.CONNECTING;
+        PatchedWS.OPEN = OrigWS.OPEN;
+        PatchedWS.CLOSING = OrigWS.CLOSING;
+        PatchedWS.CLOSED = OrigWS.CLOSED;
+        window.WebSocket = PatchedWS;
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

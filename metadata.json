@@ -1,0 +1,11 @@
+{
+  "name": "Remix Bahagia Group Property ERP \u0026 Portal",
+  "description": "Sistem Informasi Manajemen Properti, ERP Pengembang Perumahan Subsidi, dan Website Katalog Publik untuk Bahagia Group Property (PT Tata Bahagia Land \u0026 PT Bahagia Prima Property).",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

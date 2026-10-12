@@ -1,0 +1,273 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Functions
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'bahagiagrupproperty@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role', 'isActive', 'companyId', 'active', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'name', 'email', 'role', 'permissions', 'isActive', 'companyAccess', 'companyId', 'active', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 150 &&
+        data.role is string && data.role.size() >= 1 && data.role.size() <= 40 &&
+        data.isActive is bool &&
+        data.companyId is string && data.companyId.size() >= 1 && data.companyId.size() <= 64 &&
+        data.active is bool &&
+        data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 64 &&
+        (!('permissions' in data) || (data.permissions is list && data.permissions.size() <= 20 && (data.permissions.size() == 0 || data.permissions[0] is string))) &&
+        (!('companyAccess' in data) || (data.companyAccess is list && data.companyAccess.size() <= 10 && (data.companyAccess.size() == 0 || data.companyAccess[0] is string))) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() >= 1 && data.updatedAt.size() <= 64));
+    }
+
+    function isValidErpRecord(data) {
+      return data.keys().hasAll(['id', 'collectionName', 'companyId', 'title', 'status', 'createdBy', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'collectionName', 'companyId', 'title', 'status', 'amount', 'createdBy', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 && data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.collectionName is string && data.collectionName.size() >= 1 && data.collectionName.size() <= 64 &&
+        data.companyId is string && data.companyId.size() >= 1 && data.companyId.size() <= 64 &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 250 &&
+        data.status is string && data.status.size() >= 1 && data.status.size() <= 64 &&
+        (!('amount' in data) || data.amount is number) &&
+        data.createdBy is string && data.createdBy.size() >= 1 && data.createdBy.size() <= 128 &&
+        data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 64 &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() >= 1 && data.updatedAt.size() <= 64));
+    }
+
+    function isValidProjectSubmission(data) {
+      return data.keys().hasAll(['id', 'submissionNumber', 'type', 'projectName', 'companyId', 'rabAmount', 'status', 'requester', 'createdBy', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'submissionNumber', 'type', 'projectName', 'companyId', 'rabAmount', 'status', 'requester', 'createdBy', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 && data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.submissionNumber is string && data.submissionNumber.size() >= 1 && data.submissionNumber.size() <= 64 &&
+        data.type is string && data.type.size() >= 1 && data.type.size() <= 32 &&
+        data.projectName is string && data.projectName.size() >= 1 && data.projectName.size() <= 250 &&
+        data.companyId is string && data.companyId.size() >= 1 && data.companyId.size() <= 64 &&
+        data.rabAmount is number &&
+        data.status is string && data.status.size() >= 1 && data.status.size() <= 64 &&
+        data.requester is string && data.requester.size() >= 1 && data.requester.size() <= 120 &&
+        data.createdBy is string && data.createdBy.size() >= 1 && data.createdBy.size() <= 128 &&
+        data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 64 &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() >= 1 && data.updatedAt.size() <= 64));
+    }
+
+    function isValidSubmissionItem(data) {
+      return data.keys().hasAll(['id', 'submissionId', 'category', 'description', 'volume', 'unit', 'unitPrice', 'subtotal', 'createdBy', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'submissionId', 'category', 'description', 'volume', 'unit', 'unitPrice', 'subtotal', 'createdBy', 'createdAt']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 && data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.submissionId is string && data.submissionId.size() >= 1 && data.submissionId.size() <= 128 && data.submissionId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 64 &&
+        data.description is string && data.description.size() >= 1 && data.description.size() <= 250 &&
+        data.volume is number &&
+        data.unit is string && data.unit.size() >= 1 && data.unit.size() <= 32 &&
+        data.unitPrice is number &&
+        data.subtotal is number &&
+        data.createdBy is string && data.createdBy.size() >= 1 && data.createdBy.size() <= 128 &&
+        data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 64;
+    }
+
+    function isValidSiteplanMaster(data) {
+      return data.keys().hasAll(['projectId', 'nama', 'backgroundImage', 'imageWidth', 'imageHeight', 'polygonsJson', 'updatedAt', 'updatedBy']) &&
+        data.keys().hasOnly(['projectId', 'nama', 'backgroundImage', 'imageWidth', 'imageHeight', 'polygonsJson', 'updatedAt', 'updatedBy']) &&
+        data.projectId is string && data.projectId.size() >= 1 && data.projectId.size() <= 128 && data.projectId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.nama is string && data.nama.size() >= 1 && data.nama.size() <= 200 &&
+        data.backgroundImage is string && data.backgroundImage.size() >= 1 && data.backgroundImage.size() <= 350000 &&
+        data.imageWidth is number && data.imageWidth >= 100 && data.imageWidth <= 10000 &&
+        data.imageHeight is number && data.imageHeight >= 100 && data.imageHeight <= 10000 &&
+        data.polygonsJson is string && data.polygonsJson.size() >= 2 && data.polygonsJson.size() <= 350000 &&
+        data.updatedAt is string && data.updatedAt.size() >= 1 && data.updatedAt.size() <= 64 &&
+        data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 150;
+    }
+
+    function isValidLiveSnapshot(data) {
+      return data.keys().hasAll(['id', 'version', 'publishedAt', 'publishedBy', 'payloadJson']) &&
+        data.keys().hasOnly(['id', 'version', 'publishedAt', 'publishedBy', 'payloadJson']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 && data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.version is number && data.version >= 1 &&
+        data.publishedAt is string && data.publishedAt.size() >= 1 && data.publishedAt.size() <= 64 &&
+        data.publishedBy is string && data.publishedBy.size() >= 1 && data.publishedBy.size() <= 150 &&
+        data.payloadJson is string && data.payloadJson.size() >= 2 && data.payloadJson.size() <= 750000;
+    }
+
+    function isValidApprovalNotification(data) {
+      return data.keys().hasAll(['id', 'targetRole', 'title', 'message', 'category', 'referenceId', 'companyId', 'amount', 'status', 'actionPath', 'requester', 'isRead', 'createdBy', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'targetRole', 'title', 'message', 'category', 'referenceId', 'companyId', 'amount', 'status', 'actionPath', 'requester', 'isRead', 'createdBy', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 && data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.targetRole is string && data.targetRole.size() >= 1 && data.targetRole.size() <= 40 &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        data.message is string && data.message.size() >= 1 && data.message.size() <= 400 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 64 &&
+        data.referenceId is string && data.referenceId.size() >= 1 && data.referenceId.size() <= 128 &&
+        data.companyId is string && data.companyId.size() >= 1 && data.companyId.size() <= 64 &&
+        data.amount is number &&
+        data.status is string && data.status.size() >= 1 && data.status.size() <= 64 &&
+        data.actionPath is string && data.actionPath.size() >= 1 && data.actionPath.size() <= 150 &&
+        data.requester is string && data.requester.size() >= 1 && data.requester.size() <= 120 &&
+        data.isRead is bool &&
+        data.createdBy is string && data.createdBy.size() >= 1 && data.createdBy.size() <= 128 &&
+        data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 64 &&
+        data.updatedAt is string && data.updatedAt.size() >= 1 && data.updatedAt.size() <= 64;
+    }
+
+    // Admins lookup collection
+    match /admins/{adminId} {
+      allow get: if isValidId(adminId) && (isOwner(adminId) || isAdmin());
+      allow list: if isAdmin() && resource.data.uid == request.auth.uid;
+      allow create, update, delete: if false;
+    }
+
+    // Users Collection (PII Isolated & RBAC Enforced)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(userId) && isValidUserProfile(incoming()) && (
+        (isOwner(userId) && incoming().uid == request.auth.uid && incoming().role == 'USER') ||
+        isAdmin()
+      );
+      allow update: if isVerifiedUser() && isValidId(userId) && isValidUserProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt && (
+          isAdmin() ||
+          (isOwner(userId) && existing().isActive == true && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'updatedAt']))
+        );
+      allow delete: if isAdmin() && isValidId(userId);
+    }
+
+    // Synchronized ERP Records (Requires Authenticated Active User / Admin)
+    match /erp_records/{recordId} {
+      allow get: if isValidId(recordId) && (isSignedIn() && (existing().createdBy == request.auth.uid || isAdmin()));
+      allow list: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(recordId) && isValidErpRecord(incoming()) &&
+        incoming().id == recordId &&
+        incoming().createdBy == request.auth.uid;
+      allow update: if isVerifiedUser() && isValidId(recordId) && isValidErpRecord(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdBy == existing().createdBy &&
+        incoming().createdAt == existing().createdAt && (
+          isAdmin() ||
+          (existing().createdBy == request.auth.uid && existing().status != 'LOCKED' && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'status', 'amount', 'updatedAt']))
+        );
+      allow delete: if isAdmin() && isValidId(recordId);
+    }
+
+    // Site Plan Polygons & Background Master Collection (Public Read for Interactive Map, Admin Write)
+    match /siteplans/{projectId} {
+      allow get: if isValidId(projectId);
+      allow list: if resource.data.projectId is string && resource.data.projectId.size() <= 128;
+      allow create: if isAdmin() && isValidId(projectId) && isValidSiteplanMaster(incoming()) &&
+        incoming().projectId == projectId;
+      allow update: if isAdmin() && isValidId(projectId) && isValidSiteplanMaster(incoming()) &&
+        incoming().projectId == existing().projectId &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['nama', 'backgroundImage', 'imageWidth', 'imageHeight', 'polygonsJson', 'updatedAt', 'updatedBy']);
+      allow delete: if isAdmin() && isValidId(projectId);
+    }
+
+    // Live Published Snapshot Collection (Public Read for Presentation Link, Admin/Verified Write)
+    match /live_snapshots/{snapshotId} {
+      allow get: if isValidId(snapshotId);
+      allow list: if resource.data.id is string && resource.data.id.size() <= 128;
+      allow create: if isVerifiedUser() && isValidId(snapshotId) && isValidLiveSnapshot(incoming()) &&
+        incoming().id == snapshotId;
+      allow update: if isVerifiedUser() && isValidId(snapshotId) && isValidLiveSnapshot(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['version', 'publishedAt', 'publishedBy', 'payloadJson']);
+      allow delete: if isAdmin() && isValidId(snapshotId);
+    }
+
+    // Real-Time Approval & Verification Notifications Collection
+    match /notifications/{notificationId} {
+      allow get: if isValidId(notificationId) && (isSignedIn() && (existing().createdBy == request.auth.uid || isAdmin())) || (isValidId(notificationId) && existing().targetRole in ['DIREKTUR', 'KEUANGAN', 'PJT', 'ADMIN', 'ALL']);
+      allow list: if resource.data.targetRole in ['DIREKTUR', 'KEUANGAN', 'PJT', 'ADMIN', 'ALL'];
+      allow create: if isVerifiedUser() && isValidId(notificationId) && isValidApprovalNotification(incoming()) &&
+        incoming().id == notificationId &&
+        incoming().createdBy == request.auth.uid;
+      allow update: if isVerifiedUser() && isValidId(notificationId) && isValidApprovalNotification(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdBy == existing().createdBy &&
+        incoming().createdAt == existing().createdAt && (
+          isAdmin() ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['isRead', 'status', 'updatedAt'])
+        );
+      allow delete: if isAdmin() && isValidId(notificationId);
+    }
+
+    // Project Submissions Collection (PJT Submissions & Approval Workflow)
+    match /project_submissions/{submissionId} {
+      allow get: if isValidId(submissionId) && (isSignedIn() && (existing().createdBy == request.auth.uid || isAdmin()));
+      allow list: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(submissionId) && isValidProjectSubmission(incoming()) &&
+        incoming().id == submissionId &&
+        incoming().createdBy == request.auth.uid;
+      allow update: if isVerifiedUser() && isValidId(submissionId) && isValidProjectSubmission(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdBy == existing().createdBy &&
+        incoming().createdAt == existing().createdAt && (
+          isAdmin() ||
+          (existing().createdBy == request.auth.uid && existing().status != 'LOCKED' && incoming().diff(existing()).affectedKeys().hasOnly(['projectName', 'rabAmount', 'status', 'updatedAt']))
+        );
+      allow delete: if isAdmin() && isValidId(submissionId);
+
+      // Sub-collection: RAB Detail Items
+      match /submission_items/{itemId} {
+        allow get: if isValidId(submissionId) && isValidId(itemId) && isSignedIn() && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/project_submissions/$(submissionId)).data.createdBy == request.auth.uid
+        );
+        allow list: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
+        allow create: if isVerifiedUser() && isValidId(submissionId) && isValidId(itemId) && isValidSubmissionItem(incoming()) &&
+          incoming().id == itemId &&
+          incoming().submissionId == submissionId &&
+          incoming().createdBy == request.auth.uid &&
+          exists(/databases/$(database)/documents/project_submissions/$(submissionId)) &&
+          (isAdmin() || get(/databases/$(database)/documents/project_submissions/$(submissionId)).data.createdBy == request.auth.uid);
+        allow update: if isVerifiedUser() && isValidId(submissionId) && isValidId(itemId) && isValidSubmissionItem(incoming()) &&
+          incoming().id == existing().id &&
+          incoming().submissionId == existing().submissionId &&
+          incoming().createdBy == existing().createdBy &&
+          incoming().createdAt == existing().createdAt && (
+            isAdmin() ||
+            (get(/databases/$(database)/documents/project_submissions/$(submissionId)).data.createdBy == request.auth.uid &&
+              get(/databases/$(database)/documents/project_submissions/$(submissionId)).data.status != 'Approved' &&
+              incoming().diff(existing()).affectedKeys().hasOnly(['description', 'volume', 'unit', 'unitPrice', 'subtotal']))
+          );
+        allow delete: if isValidId(submissionId) && isValidId(itemId) && (
+          isAdmin() ||
+          (isVerifiedUser() && get(/databases/$(database)/documents/project_submissions/$(submissionId)).data.createdBy == request.auth.uid)
+        );
+      }
+    }
+  }
+}
